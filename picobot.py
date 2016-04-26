@@ -2,6 +2,7 @@ from sys import argv, exit, stdin
 import create
 import re
 from itertools import groupby
+import logging
 
 def collect_state_data():
     print("Enter your program's states. End with 'q'")
@@ -59,7 +60,7 @@ def make_state_machine(states):
 
 
 
-def run_state_machine(machine, create):
+def run_state_machine(machine, create, log):
     state = '0'
     while True:
         directions, transition_states = machine[state]
@@ -75,6 +76,9 @@ def run_state_machine(machine, create):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(name): [%(levelname)s] %(asctime)s >> %(message)s')
+    log = logging.getLogger('picobot')
+    log.setLevel(logging.INFO)
     states = load_states(argv[2] if len(argv) > 2 else None)
     state_machine = make_state_machine(states)
     if not argv[1]:
@@ -83,4 +87,4 @@ if __name__ == '__main__':
 
     create = create.Create(argv[1])
     with create:
-        run_state_machine(state_machine, create)
+        run_state_machine(state_machine, create, log)
