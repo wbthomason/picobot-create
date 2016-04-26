@@ -5,7 +5,8 @@ from itertools import groupby
 import logging
 
 def collect_state_data():
-    print("Enter your program's states. End with 'q'")
+    '''Reads a Picobot program from stdin'''
+    print("Enter your program's states, one line at a time. End with 'q'")
     state_data = []
     for state in stdin:
         state = state.strip()
@@ -15,6 +16,9 @@ def collect_state_data():
 
 
 def parse(state_data):
+    '''Given a set of strings each representing a state, remove comments and
+    parse out the relevant parts of each state into a dictionary, grouped by
+    state number'''
     state_regex =\
         re.compile(r'(?P<state_num>[0-9]+)\s+(?P<sensor_state>[xXnNsSwWeE*]{4})\s+->\s+(?P<direction>[nNsSwWeE])\s+(?P<new_state>[0-9]+)')
     comment_regex = re.compile(r'.*#.*$')
@@ -27,6 +31,8 @@ def parse(state_data):
 
 
 def load_states(state_filename):
+    '''Read a state file if one was provided, else prompt for a set of states on
+    stdin. Return the parsed state data.'''
     if state_filename:
         with open(state_filename, 'r') as state_file:
             state_data = state_file.readlines()
@@ -40,6 +46,9 @@ direction_map = {'N': 0, 'E': 1, 'W': 2, 'S': 3}
 
 
 def make_state_machine(states):
+    '''Given parsed state data, form a state machine mapping states to pairs of
+    directions to check and possible sensor states. Each sensor state maps a
+    4-tuple to a direction in which to drive and a new state to which to transition.'''
     machine = {}
     for state in states:
         state_edges = states[state]
@@ -61,6 +70,8 @@ def make_state_machine(states):
 
 
 def run_state_machine(machine, create, log):
+    '''Execute the state machine by transitioning between states until a
+    terminal state is reached'''
     state = '0'
     while True:
         directions, transition_states = machine[state]
