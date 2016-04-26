@@ -8,13 +8,11 @@ class Create(object):
     """A class to manage the connection to and commands for a Create robot."""
    
     # Opcodes
-    START       = (128).to_bytes(1, byteorder='big')
-    SAFE_MODE   = (131).to_bytes(1, byteorder='big')
-    DRIVE       = (137).to_bytes(1, byteorder='big')
-    SENSORS     = (142).to_bytes(1, byteorder='big')
-    QUERY_LIST  = (149).to_bytes(1, byteorder='big')
-    STREAM      = (148).to_bytes(1, byteorder='big')
-    LED         = (139).to_bytes(1, byteorder='big')
+    START           = (128).to_bytes(1, byteorder='big')
+    SAFE_MODE       = (131).to_bytes(1, byteorder='big')
+    DRIVE           = (137).to_bytes(1, byteorder='big')
+    READ_BUMPER     = (142).to_bytes(1, byteorder='big') + (7).to_bytes(1, byteorder='big')
+    LED             = (139).to_bytes(1, byteorder='big')
 
     # Direction encodings
     NORTH   = 0
@@ -112,7 +110,13 @@ class Create(object):
 
     
     def check_direction(self, direction):
-        pass
+        if self.orientation != direction:
+            self.face_direction(direction)
+        self.send(Create.READ_BUMPER)
+        bumper_data = self.connection.read()[0]
+        left_bumper = (bumper_data & 0x02) > 0
+        right_bumper = (bumper_data & 0x01) > 0
+        return left_bumper or right_bumper
 
 
     def blink(self):
