@@ -90,7 +90,7 @@ def run_state_machine(machine, create, log):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(name): [%(levelname)s] %(asctime)s >> %(message)s')
+    logging.basicConfig(format='%(name)s: [%(levelname)s] %(asctime)s >> %(message)s')
     log = logging.getLogger('picobot')
     log.setLevel(logging.INFO)
     states = load_states(argv[2] if len(argv) > 2 else None)

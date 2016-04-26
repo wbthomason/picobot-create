@@ -13,10 +13,13 @@ class Create(object):
    
     # Opcodes
     START           = (128).to_bytes(1, byteorder='big')
-    SAFE_MODE       = (131).to_bytes(1, byteorder='big')
+    FULL_MODE       = (132).to_bytes(1, byteorder='big')
     DRIVE           = (137).to_bytes(1, byteorder='big')
     READ_BUMPER     = (142).to_bytes(1, byteorder='big') + (7).to_bytes(1, byteorder='big')
     LED             = (139).to_bytes(1, byteorder='big')
+    WAIT_DIST       = (156).to_bytes(1, byteorder='big')
+    WAIT_ANGLE      = (157).to_bytes(1, byteorder='big')
+
 
     # Direction encodings
     NORTH   = 0
@@ -26,10 +29,6 @@ class Create(object):
 
     direction_names = ['North', 'South', 'East', 'West']
 
-    # Driving time
-    FORWARD_TIME    = 3.0
-    RIGHT_ANGLE     = 3.0
-    
     # Speeds
     SLOW_FORWARD    = (200).to_bytes(2, byteorder='big', signed=True)
     SLOW_BACKWARD   = (-200).to_bytes(2, byteorder='big', signed=True)
@@ -42,31 +41,42 @@ class Create(object):
     CLOCKWISE   = bytes.fromhex('ffff')
     COUNTER     = bytes.fromhex('0001')
 
+    # Distances
+    TEN_CM = (100).to_bytes(2, byteorder='big', signed=True)
+
+    # Angles
+    RIGHT_ANGLE_CLOCKWISE   = (-90).to_bytes(2, byteorder='big', signed=True)
+    RIGHT_ANGLE_COUNTER     = (90).to_bytes(2, byteorder='big', signed=True)
+    ONE80_CLOCKWISE         = (-180).to_bytes(2, byteorder='big', signed=True)
+    ONE80_COUNTER           = (180).to_bytes(2, byteorder='big', signed=True)
+    NO_TURN                 = (0).to_bytes(2, byteorder='big', signed=True)
+
+
     # Turning map
     turn_map = [
             [
-                (STRAIGHT, 0.0),
-                (CLOCKWISE, 2 * RIGHT_ANGLE),
-                (CLOCKWISE, RIGHT_ANGLE),
-                (COUNTER, RIGHT_ANGLE)
+                (STRAIGHT, NO_TURN),
+                (CLOCKWISE, ONE80_CLOCKWISE),
+                (CLOCKWISE, RIGHT_ANGLE_CLOCKWISE),
+                (COUNTER, RIGHT_ANGLE_COUNTER)
             ],
             [
-                (COUNTER, 2 * RIGHT_ANGLE),
-                (STRAIGHT, 0.0),
-                (COUNTER, RIGHT_ANGLE),
-                (CLOCKWISE, RIGHT_ANGLE)
+                (COUNTER, ONE80_COUNTER),
+                (STRAIGHT, NO_TURN),
+                (COUNTER, RIGHT_ANGLE_COUNTER),
+                (CLOCKWISE, RIGHT_ANGLE_CLOCKWISE)
             ],
             [
-                (COUNTER, RIGHT_ANGLE),
-                (CLOCKWISE, RIGHT_ANGLE),
-                (STRAIGHT, 0.0),
-                (CLOCKWISE, 2.0 * RIGHT_ANGLE)
+                (COUNTER, RIGHT_ANGLE_COUNTER),
+                (CLOCKWISE, RIGHT_ANGLE_CLOCKWISE),
+                (STRAIGHT, NO_TURN),
+                (CLOCKWISE, ONE80_CLOCKWISE)
             ],
             [
-                (CLOCKWISE, RIGHT_ANGLE),
-                (COUNTER, RIGHT_ANGLE),
-                (COUNTER, 2.0 * RIGHT_ANGLE),
-                (STRAIGHT, 0.0)
+                (CLOCKWISE, RIGHT_ANGLE_CLOCKWISE),
+                (COUNTER, RIGHT_ANGLE_COUNTER),
+                (COUNTER, ONE80_COUNTER),
+                (STRAIGHT, NO_TURN)
             ]
         ]
 
@@ -75,18 +85,18 @@ class Create(object):
         self.connection.baudrate = 57600
         self.connection.port = port_name
         self.orientation = Create.NORTH
-        logging.basicConfig(format='%(name): [%(levelname)s] %(asctime)s >> %(message)s')
-        self.log = logging.getLogger('Create-{}'.format(port_name))
+        logging.basicConfig(format='%(name)s: [%(levelname)s] %(asctime)s >> %(message)s')
+        self.log = logging.getLogger('Create on {}'.format(port_name))
         self.log.setLevel(logging.INFO)
 
     
     def __enter__(self):
-        self.log.info('Opening connection to Create}')
+        self.log.info('Opening connection to Create')
         self.connection.open()
         self.log.info('Sending START opcode')
-        self.connection.write(Create.START)
-        self.log.info('Sending SAFE_MODE opcode')
-        self.connection.write(Create.SAFE_MODE)
+        self.send(Create.START)
+        self.log.info('Sending FULL_MODE opcode')
+        self.send(Create.FULL_MODE)
 
 
     def __exit__(self, type, value, traceback):
@@ -96,6 +106,7 @@ class Create(object):
 
     def send(self, command_bytes):
         self.connection.write(command_bytes)
+        time.sleep(1.0)
 
     
     def drive(self, direction):
@@ -103,17 +114,20 @@ class Create(object):
             self.face_direction(direction)
 
         self.log.info('Driving {}'.format(Create.direction_names[direction]))
-        self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
-        time.sleep(Create.FORWARD_TIME)
-        self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
+        drive_command = Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT 
+        wait_command = Create.WAIT_DIST + Create.TEN_CM
+        stop_command = Create.DRIVE + Create.STATIONARY + Create.STRAIGHT
+        self.send(drive_command + wait_command + stop_command)
 
     
     def face_direction(self, direction):
         self.log.info('Turning to face {}'.format(Create.direction_names[direction]))
-        turn_direction, turn_time = Create.turn_map[self.orientation][direction]
-        self.send(Create.DRIVE + Create.STATIONARY + turn_direction)
-        time.sleep(turn_time)
-        self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
+        turn_direction, turn_angle = Create.turn_map[self.orientation][direction]
+        print(turn_direction, turn_angle)
+        turn_command = Create.DRIVE + Create.SLOW_FORWARD + turn_direction 
+        wait_command = Create.WAIT_ANGLE + turn_angle
+        stop_command = Create.DRIVE + Create.STATIONARY + Create.STRAIGHT
+        self.send(turn_command + wait_command + stop_command)
         self.orientation = direction
 
     
@@ -135,28 +149,20 @@ class Create(object):
         power_color_orange = (127).to_bytes(1, byteorder='big')
         power_color_green = (0).to_bytes(1, byteorder='big')
         power_intensity_full = (255).to_bytes(1, byteorder='big')
-        time.sleep(2.0)
         self.log.info('Blinking on...')
         self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking off...')
         self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking on...')
         self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking off...')
         self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking on...')
         self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking off...')
-        time.sleep(1.0)
         self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         self.log.info('Blinking on...')
         self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
-        time.sleep(1.0)
         self.log.info('Blinking off...')
         self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         self.log.info('Resetting Power LED color')
@@ -167,3 +173,4 @@ if __name__ == '__main__':
     with create:
         create.blink()
         create.drive(Create.EAST)
+        create.drive(Create.WEST)
