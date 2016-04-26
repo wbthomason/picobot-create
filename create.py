@@ -20,6 +20,8 @@ class Create(object):
     EAST    = 2
     WEST    = 3
 
+    direction_map = ['North', 'South', 'East', 'West']
+
     # Driving time
     FORWARD_TIME    = 3.0
     RIGHT_ANGLE     = 3.0
@@ -69,13 +71,13 @@ class Create(object):
         self.connection.baudrate = 57600
         self.connection.port = port_name
         self.orientation = Create.NORTH
-        logging.basicConfig(format='[%(levelname)s] %(asctime)s :>> %(message)s')
+        logging.basicConfig(format='%(name): [%(levelname)s] %(asctime)s >> %(message)s')
         self.log = logging.getLogger('Create-{}'.format(port_name))
         self.log.setLevel(logging.INFO)
 
     
     def __enter__(self):
-        self.log.info('Opening connection to Create on {}'.format(self.connection.port))
+        self.log.info('Opening connection to Create}')
         self.connection.open()
         self.log.info('Sending START opcode')
         self.connection.write(Create.START)
@@ -84,7 +86,7 @@ class Create(object):
 
 
     def __exit__(self, type, value, traceback):
-        self.log.info('Closing connection to Create on {}'.format(self.connection.port))
+        self.log.info('Closing connection to Create')
         self.connection.close()
 
 
@@ -95,13 +97,15 @@ class Create(object):
     def drive(self, direction):
         if self.orientation != direction:
             self.face_direction(direction)
+
+        self.log.info('Driving {}'.format(Create.direction_map[direction]))
         self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
         time.sleep(Create.FORWARD_TIME)
         self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
 
-
     
     def face_direction(self, direction):
+        self.log.info('Turning to face {}'.format(Create.direction_map[direction]))
         turn_direction, turn_time = Create.turn_map[self.orientation][direction]
         self.send(Create.DRIVE + Create.STATIONARY + turn_direction)
         time.sleep(turn_time)
@@ -112,6 +116,8 @@ class Create(object):
     def check_direction(self, direction):
         if self.orientation != direction:
             self.face_direction(direction)
+
+        self.log.info('Checking {}'.format(Create.direction_map[direction]))
         self.send(Create.READ_BUMPER)
         bumper_data = self.connection.read()[0]
         left_bumper = (bumper_data & 0x02) > 0
