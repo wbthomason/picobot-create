@@ -22,6 +22,10 @@ class Create(object):
     EAST    = 2
     WEST    = 3
 
+    # Driving time
+    FORWARD_TIME    = 3.0
+    RIGHT_ANGLE     = 3.0
+    
     # Speeds
     SLOW_FORWARD    = (200).to_bytes(2, byteorder='big', signed=True)
     SLOW_BACKWARD   = (-200).to_bytes(2, byteorder='big', signed=True)
@@ -34,11 +38,39 @@ class Create(object):
     CLOCKWISE   = bytes.fromhex('ffff')
     COUNTER     = bytes.fromhex('0001')
 
+    # Turning map
+    turn_map = [
+            [
+                (Create.STRAIGHT, 0.0),
+                (Create.CLOCKWISE, 2 * Create.RIGHT_ANGLE),
+                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
+                (Create.COUNTER, Create.RIGHT_ANGLE)
+            ],
+            [
+                (Create.COUNTER, 2 * Create.RIGHT_ANGLE),
+                (Create.STRAIGHT, 0.0),
+                (Create.COUNTER, Create.RIGHT_ANGLE),
+                (Create.CLOCKWISE, Create.RIGHT_ANGLE)
+            ],
+            [
+                (Create.COUNTER, Create.RIGHT_ANGLE),
+                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
+                (Create.STRAIGHT, 0.0),
+                (Create.CLOCKWISE, 2.0 * Create.RIGHT_ANGLE)
+            ],
+            [
+                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
+                (Create.COUNTER, Create.RIGHT_ANGLE),
+                (Create.COUNTER, 2.0 * Create.RIGHT_ANGLE),
+                (Create.STRAIGHT, 0.0)
+            ]
+        ]
+
     def __init__(self, port_name):
         self.connection = serial.Serial()
         self.connection.baudrate = 57600
         self.connection.port = port_name
-        self.direction = Create.NORTH
+        self.orientation = Create.NORTH
         logging.basicConfig(format='[%(levelname)s] %(asctime)s :>> %(message)s')
         self.log = logging.getLogger('Create-{}'.format(port_name))
         self.log.setLevel(logging.INFO)
@@ -63,16 +95,20 @@ class Create(object):
 
     
     def drive(self, direction):
-        if self.direction != direction:
+        if self.orientation != direction:
             self.face_direction(direction)
         self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
-        time.sleep(3.0)
+        time.sleep(Create.FORWARD_TIME)
         self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
 
 
     
     def face_direction(self, direction):
-        pass
+        turn_direction, turn_time = Create.turn_map[self.orientation][direction]
+        self.send(Create.DRIVE + Create.STATIONARY + turn_direction)
+        time.sleep(turn_time)
+        self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
+        self.orientation = direction
 
     
     def check_direction(self, direction):
@@ -87,42 +123,33 @@ class Create(object):
         power_intensity_full = (255).to_bytes(1, byteorder='big')
         time.sleep(2.0)
         self.log.info('Blinking on...')
-        self.connection.write(Create.LED + play_advance_on + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking off...')
-        self.connection.write(Create.LED + play_advance_off + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking on...')
-        self.connection.write(Create.LED + play_advance_on + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking off...')
-        self.connection.write(Create.LED + play_advance_off + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking on...')
-        self.connection.write(Create.LED + play_advance_on + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking off...')
         time.sleep(1.0)
-        self.connection.write(Create.LED + play_advance_off + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         self.log.info('Blinking on...')
-        self.connection.write(Create.LED + play_advance_on + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_on + power_color_orange + power_intensity_full)
         time.sleep(1.0)
         self.log.info('Blinking off...')
-        self.connection.write(Create.LED + play_advance_off + power_color_orange +
-                power_intensity_full)
+        self.send(Create.LED + play_advance_off + power_color_orange + power_intensity_full)
         self.log.info('Resetting Power LED color')
-        self.connection.write(Create.LED + play_advance_off + power_color_green
-                + power_intensity_full)
+        self.send(Create.LED + play_advance_off + power_color_green + power_intensity_full)
 
 if __name__ == '__main__':
     create = Create(argv[1])
     with create:
         create.blink()
-        create.drive(Create.NORTH)
+        create.drive(Create.EAST)
