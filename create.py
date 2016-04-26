@@ -3,6 +3,10 @@ import time
 from sys import argv
 import logging
 
+
+direction_map = {'N': 0, 'E': 2, 'W': 3, 'S': 1}
+
+
 class Create(object):
 
     """A class to manage the connection to and commands for a Create robot."""
@@ -20,7 +24,7 @@ class Create(object):
     EAST    = 2
     WEST    = 3
 
-    direction_map = ['North', 'South', 'East', 'West']
+    direction_names = ['North', 'South', 'East', 'West']
 
     # Driving time
     FORWARD_TIME    = 3.0
@@ -41,28 +45,28 @@ class Create(object):
     # Turning map
     turn_map = [
             [
-                (Create.STRAIGHT, 0.0),
-                (Create.CLOCKWISE, 2 * Create.RIGHT_ANGLE),
-                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
-                (Create.COUNTER, Create.RIGHT_ANGLE)
+                (STRAIGHT, 0.0),
+                (CLOCKWISE, 2 * RIGHT_ANGLE),
+                (CLOCKWISE, RIGHT_ANGLE),
+                (COUNTER, RIGHT_ANGLE)
             ],
             [
-                (Create.COUNTER, 2 * Create.RIGHT_ANGLE),
-                (Create.STRAIGHT, 0.0),
-                (Create.COUNTER, Create.RIGHT_ANGLE),
-                (Create.CLOCKWISE, Create.RIGHT_ANGLE)
+                (COUNTER, 2 * RIGHT_ANGLE),
+                (STRAIGHT, 0.0),
+                (COUNTER, RIGHT_ANGLE),
+                (CLOCKWISE, RIGHT_ANGLE)
             ],
             [
-                (Create.COUNTER, Create.RIGHT_ANGLE),
-                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
-                (Create.STRAIGHT, 0.0),
-                (Create.CLOCKWISE, 2.0 * Create.RIGHT_ANGLE)
+                (COUNTER, RIGHT_ANGLE),
+                (CLOCKWISE, RIGHT_ANGLE),
+                (STRAIGHT, 0.0),
+                (CLOCKWISE, 2.0 * RIGHT_ANGLE)
             ],
             [
-                (Create.CLOCKWISE, Create.RIGHT_ANGLE),
-                (Create.COUNTER, Create.RIGHT_ANGLE),
-                (Create.COUNTER, 2.0 * Create.RIGHT_ANGLE),
-                (Create.STRAIGHT, 0.0)
+                (CLOCKWISE, RIGHT_ANGLE),
+                (COUNTER, RIGHT_ANGLE),
+                (COUNTER, 2.0 * RIGHT_ANGLE),
+                (STRAIGHT, 0.0)
             ]
         ]
 
@@ -98,14 +102,14 @@ class Create(object):
         if self.orientation != direction:
             self.face_direction(direction)
 
-        self.log.info('Driving {}'.format(Create.direction_map[direction]))
+        self.log.info('Driving {}'.format(Create.direction_names[direction]))
         self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
         time.sleep(Create.FORWARD_TIME)
         self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
 
     
     def face_direction(self, direction):
-        self.log.info('Turning to face {}'.format(Create.direction_map[direction]))
+        self.log.info('Turning to face {}'.format(Create.direction_names[direction]))
         turn_direction, turn_time = Create.turn_map[self.orientation][direction]
         self.send(Create.DRIVE + Create.STATIONARY + turn_direction)
         time.sleep(turn_time)
@@ -117,7 +121,7 @@ class Create(object):
         if self.orientation != direction:
             self.face_direction(direction)
 
-        self.log.info('Checking {}'.format(Create.direction_map[direction]))
+        self.log.info('Checking {}'.format(Create.direction_names[direction]))
         self.send(Create.READ_BUMPER)
         bumper_data = self.connection.read()[0]
         left_bumper = (bumper_data & 0x02) > 0
