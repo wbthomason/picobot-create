@@ -42,7 +42,7 @@ class Create(object):
     COUNTER     = bytes.fromhex('0001')
 
     # Distances
-    TEN_CM = (100).to_bytes(2, byteorder='big', signed=True)
+    STRIDE = (100).to_bytes(2, byteorder='big', signed=True)
 
     # Angles
     RIGHT_ANGLE_CLOCKWISE   = (-90).to_bytes(2, byteorder='big', signed=True)
@@ -115,7 +115,7 @@ class Create(object):
 
         self.log.info('Driving {}'.format(Create.direction_names[direction]))
         drive_command = Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT 
-        wait_command = Create.WAIT_DIST + Create.TEN_CM
+        wait_command = Create.WAIT_DIST + Create.STRIDE
         stop_command = Create.DRIVE + Create.STATIONARY + Create.STRAIGHT
         self.send(drive_command + wait_command + stop_command)
 
@@ -123,7 +123,6 @@ class Create(object):
     def face_direction(self, direction):
         self.log.info('Turning to face {}'.format(Create.direction_names[direction]))
         turn_direction, turn_angle = Create.turn_map[self.orientation][direction]
-        print(turn_direction, turn_angle)
         turn_command = Create.DRIVE + Create.SLOW_FORWARD + turn_direction 
         wait_command = Create.WAIT_ANGLE + turn_angle
         stop_command = Create.DRIVE + Create.STATIONARY + Create.STRAIGHT
@@ -174,3 +173,5 @@ if __name__ == '__main__':
         create.blink()
         create.drive(Create.EAST)
         create.drive(Create.WEST)
+        print(create.check_direction(Create.WEST))
+        print(create.check_direction(Create.SOUTH))
