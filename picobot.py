@@ -79,10 +79,13 @@ def run_state_machine(machine, create, log):
         sensor_state = '****'
         for dir_name, dir_val in direction_states:
             sensor_state[direction_map[dir_name]] = dir_name if dir_val else 'X'
+        log.info('Read sensor values: {}'.format(sensor_state))
         direction, new_state = transition_states[sensor_state]
         if direction == 'X':
             return
+        log.info('Driving {}'.format(direction))
         create.drive(create.direction_map[direction])
+        log.info('Transitioning to state {}'.format(new_state))
         state = new_state
 
 
