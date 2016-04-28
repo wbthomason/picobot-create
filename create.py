@@ -139,9 +139,11 @@ class Create(object):
         self.log.info('Checking {}'.format(Create.direction_names[direction]))
         self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
         self.send(Create.WAIT_DIST + Create.BUMP)
+        self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
         self.send(Create.READ_BUMPER)
         self.send(Create.DRIVE + Create.SLOW_BACKWARD + Create.STRAIGHT)
         self.send(Create.WAIT_DIST + Create.UNBUMP)
+        self.send(Create.DRIVE + Create.STATIONARY + Create.STRAIGHT)
         bumper_data = self.connection.read()[0]
         left_bumper = (bumper_data & 0x02) > 0
         right_bumper = (bumper_data & 0x01) > 0
