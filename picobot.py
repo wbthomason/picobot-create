@@ -52,12 +52,18 @@ def make_state_machine(states):
     machine = {}
     for state in states:
         state_edges = states[state]
-        direction_sets = [set(edge['sensor_state'].upper()) for edge in state_edges]
-        directions = set()
-        for dir_set in direction_sets:
-            directions = directions | dir_set
-
-        directions -= set('*')
+        direction_sets = [edge['sensor_state'].upper() for edge in state_edges]
+        directions = []
+        for state in direction_sets:
+            if state[0] != '*':
+                directions.append('N')
+            if state[1] != '*':
+                directions.append('E')
+            if state[2] != '*':
+                directions.append('W')
+            if state[3] != '*':
+                directions.append('S')
+        directions = set(directions)
         directions = [(direction, create.direction_map[direction]) for direction in\
                 directions]
         sensor_states = {edge['sensor_state'].upper():\
@@ -66,7 +72,6 @@ def make_state_machine(states):
         machine[state] = (directions, sensor_states)
 
     return machine
-
 
 
 def run_state_machine(machine, create, log):
