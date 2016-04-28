@@ -54,14 +54,14 @@ def make_state_machine(states):
         state_edges = states[state]
         direction_sets = [edge['sensor_state'].upper() for edge in state_edges]
         directions = []
-        for state in direction_sets:
-            if state[0] != '*':
+        for dir_state in direction_sets:
+            if dir_state[0] != '*':
                 directions.append('N')
-            if state[1] != '*':
+            if dir_state[1] != '*':
                 directions.append('E')
-            if state[2] != '*':
+            if dir_state[2] != '*':
                 directions.append('W')
-            if state[3] != '*':
+            if dir_state[3] != '*':
                 directions.append('S')
         directions = set(directions)
         directions = [(direction, create.direction_map[direction]) for direction in\
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(name)s: [%(levelname)s] %(asctime)s >> %(message)s')
     log = logging.getLogger('picobot')
     log.setLevel(logging.INFO)
+    log.info('Constructing state machine')
     states = load_states(argv[2] if len(argv) > 2 else None)
     state_machine = make_state_machine(states)
     if not argv[1]:
@@ -105,5 +106,7 @@ if __name__ == '__main__':
         exit(42)
 
     create = create.Create(argv[1])
+    log.info('Starting execution')
     with create:
         run_state_machine(state_machine, create, log)
+    log.info('Terminal state reached')
