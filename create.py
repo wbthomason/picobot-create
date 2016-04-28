@@ -43,6 +43,8 @@ class Create(object):
 
     # Distances
     STRIDE = (100).to_bytes(2, byteorder='big', signed=True)
+    BUMP = (50).to_bytes(2, byteorder='big', signed=True)
+    UNBUMP = (-50).to_bytes(2, byteorder='big', signed=True)
 
     # Angles
     RIGHT_ANGLE_CLOCKWISE   = (-90).to_bytes(2, byteorder='big', signed=True)
@@ -135,7 +137,11 @@ class Create(object):
             self.face_direction(direction)
 
         self.log.info('Checking {}'.format(Create.direction_names[direction]))
+        self.send(Create.DRIVE + Create.SLOW_FORWARD + Create.STRAIGHT)
+        self.send(Create.WAIT_DIST + Create.BUMP)
         self.send(Create.READ_BUMPER)
+        self.send(Create.DRIVE + Create.SLOW_BACKWARD + Create.STRAIGHT)
+        self.send(Create.WAIT_DIST + Create.UNBUMP)
         bumper_data = self.connection.read()[0]
         left_bumper = (bumper_data & 0x02) > 0
         right_bumper = (bumper_data & 0x01) > 0
