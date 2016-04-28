@@ -81,9 +81,10 @@ def run_state_machine(machine, create, log):
     while True:
         directions, transition_states = machine[state]
         direction_states = [(direction[0], create.check_direction(direction[1])) for direction in directions]
-        sensor_state = '****'
+        sensor_state = list('****')
         for dir_name, dir_val in direction_states:
             sensor_state[direction_map[dir_name]] = dir_name if dir_val else 'X'
+        sensor_state = ''.join(sensor_state)
         log.info('Read sensor values: {}'.format(sensor_state))
         direction, new_state = transition_states[sensor_state]
         if direction == 'X':
