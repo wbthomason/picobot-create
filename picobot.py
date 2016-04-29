@@ -69,9 +69,24 @@ def make_state_machine(states):
         sensor_states = {edge['sensor_state'].upper():\
                 (edge['direction'].upper(), edge['new_state']) for edge in state_edges}
 
-        machine[state] = (directions, sensor_states)
+        machine[state] = (directions, sensor_states, direction_sets)
 
     return machine
+
+
+def transition(sensor_state, ordered_states):
+    '''Check a sensor state against the transition states of a state, to deal
+    with translating *s'''
+    for state in ordered_states:
+        match_flag = True
+        for direction in range(4):
+            match_flag = match_flag and\
+                    (state[direction] == sensor_state[direction] or\
+                            state[direction] =='*')
+        if match_flag:
+            return state
+
+    return 'No such state'
 
 
 def run_state_machine(machine, create, log):
@@ -79,18 +94,18 @@ def run_state_machine(machine, create, log):
     terminal state is reached'''
     state = '0'
     while True:
-        directions, transition_states = machine[state]
+        directions, transition_states, ordered_states = machine[state]
         direction_states = [(direction[0], create.check_direction(direction[1])) for direction in directions]
         sensor_state = list('****')
         for dir_name, dir_val in direction_states:
             sensor_state[direction_map[dir_name]] = dir_name if dir_val else 'X'
         sensor_state = ''.join(sensor_state)
         log.info('Read sensor values: {}'.format(sensor_state))
-        direction, new_state = transition_states[sensor_state]
+        direction, new_state = transition_states[transition(sensor_state, ordered_states)]
         if direction == 'X':
             return
         log.info('Driving {}'.format(direction))
-        create.drive(create.direction_map[direction])
+        create.drive(direction_map[direction])
         log.info('Transitioning to state {}'.format(new_state))
         state = new_state
 
